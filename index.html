@@ -1,15 +1,81 @@
-function initializeViz() {
-  var placeholderDiv = document.getElementById("tableauViz");
-  var url = "https://public.tableau.com/views/WorldIndicators/GDPpercapita";
-  var options = {
-    width: placeholderDiv.offsetWidth,
-    height: placeholderDiv.offsetHeight,
-    hideTabs: true,
-    hideToolbar: true,
-    onFirstInteractive: function () {
-      workbook = viz.getWorkbook();
-      activeSheet = workbook.getActiveSheet();
-    }
-  };
-  viz = new tableau.Viz(placeholderDiv, url, options);
+<!DOCTYPE html>
+<html>
+ 
+<head>
+    <title>Basic Embed</title>
+     
+    <script type="text/javascript"
+        src="https://public.tableau.com/javascripts/api/tableau-2.min.js"></script>
+    <script type="text/javascript">
+        var viz,workbook, activeSheet;
+         
+        function initViz() {
+            var containerDiv = document.getElementById("vizContainer"),
+                url = "https://public.tableau.com/views/WhereistheMostExpensive__---NoAction/WhereistheMostExpensive?:embed=y&:display_count=yes",
+                options = {
+                    hideTabs: true,
+                    onFirstInteractive: function () {
+                        workbook = viz.getWorkbook() ;
+                        activeSheet = workbook.getActiveSheet() ;
+                        listenToMarksSelection();
+                    }
+                };
+             
+            viz = new tableau.Viz(containerDiv, url, options);
+        }
+
+        function filterSingleValue(){
+            activeSheet.getWorksheets().get("Price vs Quality").applyFilterAsync("State Abbreviation","WA",tableau.FilterUpdateType.REPLACE);  
+        }
+
+
+
+        function exportPDF() {
+  viz.showExportPDFDialog();
 }   
+        
+        function exportImage() {
+  viz.showExportImageDialog();
+}  
+
+   function listenToMarksSelection() {
+            viz.addEventListener(tableau.TableauEventName.MARKS_SELECTION, onMarksSelection);
+        }
+
+        function onMarksSelection(marksEvent) {
+            return marksEvent.getMarksAsync().then(reportSelectedMarks);
+        }
+
+
+        function reportSelectedMarks(marks) {
+            var html = "";
+
+            for (var markIndex = 0; markIndex < marks.length; markIndex++) {
+                var pairs = marks[markIndex].getPairs();
+                html += "<b>Mark " + markIndex + ":</b><ul>";
+
+                for (var pairIndex = 0; pairIndex < pairs.length; pairIndex++) {
+                    var pair = pairs[pairIndex];
+                    html += "<li><b>Field Name:</b> " + pair.fieldName;
+                    html += "<br/><b>Value:</b> " + pair.formattedValue + "</li>";
+                }
+
+                html += "</ul>";
+            }
+
+            var infoDiv = document.getElementById('markDetails');
+            infoDiv.innerHTML = html;
+        }
+         
+    </script>
+</head>
+ 
+<body onload="initViz();">
+    <button onClick = "filterSingleValue();"> Filter </button>
+    <button onClick = "exportPDF();"> Export to PDF </button>
+    <button onClick = "exportImage();"> Export Image </button>
+    <div id="vizContainer" style="width:800px; height:860px;"></div>
+    <div id="markDetails">Information about selected marks displays here.</div>
+</body>
+ 
+</html>
